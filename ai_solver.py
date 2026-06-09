@@ -55,8 +55,8 @@ def build_batch_prompt(questions):
 
 
 def ask_gemini(prompt):
-    """Query Google Gemini 2.5 Flash."""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    """Query Google Gemini 2.5 Flash Lite."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.1, "maxOutputTokens": 500}

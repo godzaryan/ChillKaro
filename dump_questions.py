@@ -12,7 +12,7 @@ USERNAME = input("Enter your Username / Roll No: ").strip()
 PASSWORD = input("Enter your Password: ").strip()
 
 session = requests.Session()
-base_url = "https://makauttest3.ucanapply.com"
+base_url = "https://makauttest1.ucanapply.com"
 get_url = f"{base_url}/onlineexam/public/"
 post_url = f"{base_url}/onlineexam/public/livewire/message/login-page"
 

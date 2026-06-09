@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 
 // --- Config ---
-const BASE = "https://makauttest3.ucanapply.com";
+const BASE = "https://makauttest1.ucanapply.com";
 const GET_URL = `${BASE}/onlineexam/public/`;
 const POST_URL = `${BASE}/onlineexam/public/livewire/message/login-page`;
 const UA =

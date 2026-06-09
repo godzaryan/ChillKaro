@@ -27,7 +27,7 @@ PASSWORD = input("Enter your Password: ").strip()
 
 # --- AI API Keys ---
 # Securely load from local environment file (so they aren't pushed to GitHub)
-env_path = os.path.join(os.path.dirname(__file__), "web", ".env.local")
+env_path = os.path.join(os.path.dirname(__file__), ".env.local")
 if os.path.exists(env_path):
     with open(env_path, "r") as f:
         for line in f:

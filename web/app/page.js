@@ -98,8 +98,7 @@ export default function Home() {
         break;
       case "solve_progress":
         const r = d.result;
-        addLog(`[Q${r.number}] AI Votes → Gemini: ${r.gemini || 'FAIL'} | Groq: ${r.groq || 'FAIL'} | Cerebras: ${r.cerebras || 'FAIL'}`, "system");
-        addLog(`[Q${r.number}] Final Answer: Opt ${r.final} [${r.method}]`, "success");
+        setLogs((p) => [...p, { type: "ai_solve", data: r, ts: Date.now() }]);
         break;
       case "solved":
         setResults(d.results);
@@ -295,12 +294,44 @@ export default function Home() {
             <div className="card log-card">
               <h2 className="section-title">LIVE FEED</h2>
               <div className="log-scroll">
-                {logs.map((l, i) => (
-                  <div key={i} className={`log-line log-${l.type}`}>
-                    <span className="log-time">{new Date(l.ts).toLocaleTimeString()}</span>
-                    <span className="log-msg">{l.msg}</span>
-                  </div>
-                ))}
+                {logs.map((l, i) => {
+                  if (l.type === "ai_solve") {
+                    const r = l.data;
+                    return (
+                      <div key={i} className="log-line" style={{ display: 'block', background: 'rgba(0, 0, 0, 0.4)', border: '1px solid rgba(0, 240, 255, 0.2)', borderRadius: '6px', padding: '12px', margin: '8px 0', borderLeft: '3px solid #00f0ff' }}>
+                        <div style={{ color: '#00f0ff', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.95em' }}>
+                          Q{r.number}: {r.text}
+                        </div>
+                        <div style={{ paddingLeft: '12px', marginBottom: '10px', color: '#a0aab5', fontSize: '0.85em', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {r.options && r.options.map((opt, idx) => (
+                            <div key={idx} style={{ 
+                              color: (idx + 1) === r.final ? '#00ffaa' : 'inherit', 
+                              fontWeight: (idx + 1) === r.final ? 'bold' : 'normal',
+                              display: 'flex', gap: '8px'
+                            }}>
+                              <span style={{ opacity: 0.6 }}>{idx + 1}.</span> 
+                              <span>{opt} {(idx + 1) === r.final && '✓'}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', fontSize: '0.8em', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginBottom: '6px' }}>
+                          <div><span style={{ color: '#777' }}>Gemini:</span> <span style={{ color: r.gemini ? '#00f0ff' : '#ff4444' }}>{r.gemini ? `Opt ${r.gemini}` : "FAIL"}</span></div>
+                          <div><span style={{ color: '#777' }}>Groq:</span> <span style={{ color: r.groq ? '#00f0ff' : '#ff4444' }}>{r.groq ? `Opt ${r.groq}` : "FAIL"}</span></div>
+                          <div><span style={{ color: '#777' }}>Cerebras:</span> <span style={{ color: r.cerebras ? '#00f0ff' : '#ff4444' }}>{r.cerebras ? `Opt ${r.cerebras}` : "FAIL"}</span></div>
+                        </div>
+                        <div style={{ color: '#ffb000', fontSize: '0.85em', fontWeight: 'bold' }}>
+                          ↳ FINAL: Option {r.final} <span style={{ opacity: 0.7, fontWeight: 'normal', fontSize: '0.9em' }}>({r.method})</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} className={`log-line log-${l.type}`}>
+                      <span className="log-time">{new Date(l.ts).toLocaleTimeString()}</span>
+                      <span className="log-msg">{l.msg}</span>
+                    </div>
+                  );
+                })}
                 <div ref={logsEnd} />
               </div>
             </div>

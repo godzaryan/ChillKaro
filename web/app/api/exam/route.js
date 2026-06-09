@@ -443,7 +443,8 @@ export async function POST(req) {
 
           const resData = {
             number: n,
-            text: q.text.substring(0, 120),
+            text: q.text,
+            options: q.options,
             gemini: g, groq: r, cerebras: c,
             final, method,
             optionText: finalOptText,

@@ -354,10 +354,7 @@ def main():
                                                     
                                                     new_memo = q_json.get('serverMemo', {})
                                                     if new_memo:
-                                                        current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
-                                                        current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
-                                                        if 'data' in new_memo:
-                                                            deep_merge(current_serverMemo['data'], new_memo['data'])
+                                                        deep_merge(current_serverMemo, new_memo)
                                                     
                                                     total_pages = 1
                                                     all_questions = []  # Master list of all scraped questions
@@ -415,8 +412,23 @@ def main():
                                                         all_questions.append(q1_data)
                                                         print(f"  [Q1] Collected: {q1_data['text'][:80]}...")
                                                         
+                                                        # We start with Q1 data as our current context
+                                                        current_q_data = q1_data
+                                                        
                                                         # --- Collect remaining questions (Q2 to QN) ---
                                                         for page in range(2, total_pages + 1):
+                                                            
+                                                            # Build blank mark_data for the question we are LEAVING
+                                                            mark_data = {
+                                                                "screen": current_q_data["screen"],
+                                                                "currentScreen": current_q_data["screen"],
+                                                                "answer": "",
+                                                                "option_order": current_q_data["option_order"],
+                                                                "q_id": current_q_data["q_id"],
+                                                                "display_pos": current_q_data["display_pos"],
+                                                                "q_type": current_q_data["q_type"]
+                                                            }
+                                                            
                                                             # Navigate to next question WITHOUT submitting answers
                                                             nav_payload = {
                                                                 "fingerprint": question_component["fingerprint"],
@@ -432,8 +444,8 @@ def main():
                                                                     {
                                                                         "type": "callMethod",
                                                                         "payload": {
-                                                                            "method": "loadQuestion",
-                                                                            "params": []
+                                                                            "method": "recordMarks",
+                                                                            "params": [mark_data]
                                                                         }
                                                                     }
                                                                 ]
@@ -443,13 +455,10 @@ def main():
                                                             p_resp.raise_for_status()
                                                             p_json = p_resp.json()
                                                             
-                                                            # Update server memo
+                                                            # Update server memo fully
                                                             new_memo = p_json.get('serverMemo', {})
                                                             if new_memo:
-                                                                current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
-                                                                current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
-                                                                if 'data' in new_memo:
-                                                                    deep_merge(current_serverMemo['data'], new_memo['data'])
+                                                                deep_merge(current_serverMemo, new_memo)
                                                             
                                                             p_html = p_json.get('effects', {}).get('html', '')
                                                             if p_html:
@@ -457,6 +466,7 @@ def main():
                                                                 qn_data = extract_question_data(p_soup, page)
                                                                 all_questions.append(qn_data)
                                                                 print(f"  [Q{page}] Collected: {qn_data['text'][:80]}...")
+                                                                current_q_data = qn_data # Update context for next iteration
                                                             else:
                                                                 print(f"  [Q{page}] WARNING: No HTML returned, skipping.")
                                                         
@@ -475,8 +485,14 @@ def main():
                                                         print(f"  PHASE 3: SUBMITTING ALL ANSWERS")
                                                         print(f"{'='*70}")
                                                         
-                                                        # Navigate back to Q1 first
-                                                        print("  [*] Navigating back to Question 1...")
+                                                        # Build blank mark_data for the last question (Q25) to satisfy recordMarks
+                                                        last_q = all_questions[-1]
+                                                        jump_mark_data = {
+                                                            "screen": last_q["screen"], "currentScreen": last_q["screen"],
+                                                            "answer": "", "option_order": last_q["option_order"],
+                                                            "q_id": last_q["q_id"], "display_pos": last_q["display_pos"], "q_type": last_q["q_type"]
+                                                        }
+                                                        
                                                         nav_back = {
                                                             "fingerprint": question_component["fingerprint"],
                                                             "serverMemo": current_serverMemo,
@@ -487,7 +503,7 @@ def main():
                                                                 },
                                                                 {
                                                                     "type": "callMethod",
-                                                                    "payload": {"method": "loadQuestion", "params": []}
+                                                                    "payload": {"method": "recordMarks", "params": [jump_mark_data]}
                                                                 }
                                                             ]
                                                         }
@@ -496,10 +512,7 @@ def main():
                                                         back_json = back_resp.json()
                                                         new_memo = back_json.get('serverMemo', {})
                                                         if new_memo:
-                                                            current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
-                                                            current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
-                                                            if 'data' in new_memo:
-                                                                deep_merge(current_serverMemo['data'], new_memo['data'])
+                                                            deep_merge(current_serverMemo, new_memo)
                                                         
                                                         # Now submit each answer by navigating through questions
                                                         for i, q in enumerate(solved_questions):
@@ -527,13 +540,6 @@ def main():
                                                                     {
                                                                         "type": "callMethod",
                                                                         "payload": {
-                                                                            "method": "recordMarks",
-                                                                            "params": [mark_data]
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "type": "callMethod",
-                                                                        "payload": {
                                                                             "method": "setCurrentPages",
                                                                             "params": [next_page]
                                                                         }
@@ -541,8 +547,8 @@ def main():
                                                                     {
                                                                         "type": "callMethod",
                                                                         "payload": {
-                                                                            "method": "loadQuestion",
-                                                                            "params": []
+                                                                            "method": "recordMarks",
+                                                                            "params": [mark_data]
                                                                         }
                                                                     }
                                                                 ]
@@ -555,10 +561,7 @@ def main():
                                                             # Update server memo
                                                             new_memo = s_json.get('serverMemo', {})
                                                             if new_memo:
-                                                                current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
-                                                                current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
-                                                                if 'data' in new_memo:
-                                                                    deep_merge(current_serverMemo['data'], new_memo['data'])
+                                                                deep_merge(current_serverMemo, new_memo)
                                                             
                                                             opt_text = q["options"][q["ai_answer_index"]] if q["ai_answer_index"] < len(q["options"]) else "?"
                                                             print(f"  [Q{qn}] Submitted Option {ai_idx}: {opt_text[:60]} ✓")

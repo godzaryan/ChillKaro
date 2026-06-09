@@ -341,9 +341,7 @@ export async function POST(req) {
 
         let memo = JSON.parse(JSON.stringify(qComp.serverMemo));
         const nm1 = q1Json.serverMemo || {};
-        if (nm1.checksum) memo.checksum = nm1.checksum;
-        if (nm1.htmlHash) memo.htmlHash = nm1.htmlHash;
-        if (nm1.data) deepMerge(memo.data, nm1.data);
+        if (nm1) deepMerge(memo, nm1);
 
         const q1Html = q1Json?.effects?.html || "";
         const $q1 = cheerio.load(q1Html);
@@ -363,7 +361,17 @@ export async function POST(req) {
         allQuestions.push(q1Data);
         send({ phase: "collect", q: q1Data });
 
+        let currentQData = q1Data;
         for (let p = 2; p <= totalPages; p++) {
+          const markData = {
+            screen: currentQData.screen,
+            currentScreen: currentQData.screen,
+            answer: "",
+            option_order: currentQData.option_order,
+            q_id: currentQData.q_id,
+            display_pos: currentQData.display_pos,
+            q_type: currentQData.q_type
+          };
           const navRes = await f(qUrl, jar, {
             method: "POST",
             headers: qHeaders,
@@ -372,21 +380,20 @@ export async function POST(req) {
               serverMemo: memo,
               updates: [
                 { type: "callMethod", payload: { method: "setCurrentPages", params: [p] } },
-                { type: "callMethod", payload: { method: "loadQuestion", params: [] } }
+                { type: "callMethod", payload: { method: "recordMarks", params: [markData] } }
               ],
             }),
           });
           const navJson = await navRes.json();
           const nm = navJson.serverMemo || {};
-          if (nm.checksum) memo.checksum = nm.checksum;
-          if (nm.htmlHash) memo.htmlHash = nm.htmlHash;
-          if (nm.data) deepMerge(memo.data, nm.data);
+          if (nm) deepMerge(memo, nm);
 
           const ph = navJson?.effects?.html || "";
           if (ph) {
             const qData = extractQuestion(ph, p);
             allQuestions.push(qData);
             send({ phase: "collect", q: qData });
+            currentQData = qData;
           }
         }
 
@@ -457,6 +464,12 @@ export async function POST(req) {
         send({ phase: "submit_start", total: allQuestions.length });
 
         // Go back to Q1
+        const lastQ = allQuestions[allQuestions.length - 1];
+        const jumpMarkData = {
+          screen: lastQ.screen, currentScreen: lastQ.screen, answer: "",
+          option_order: lastQ.option_order, q_id: lastQ.q_id,
+          display_pos: lastQ.display_pos, q_type: lastQ.q_type
+        };
         const backRes = await f(qUrl, jar, {
           method: "POST",
           headers: qHeaders,
@@ -465,15 +478,13 @@ export async function POST(req) {
             serverMemo: memo,
             updates: [
               { type: "callMethod", payload: { method: "setCurrentPages", params: [1] } },
-              { type: "callMethod", payload: { method: "loadQuestion", params: [] } }
+              { type: "callMethod", payload: { method: "recordMarks", params: [jumpMarkData] } }
             ],
           }),
         });
         const backJson = await backRes.json();
         const nmb = backJson.serverMemo || {};
-        if (nmb.checksum) memo.checksum = nmb.checksum;
-        if (nmb.htmlHash) memo.htmlHash = nmb.htmlHash;
-        if (nmb.data) deepMerge(memo.data, nmb.data);
+        if (nmb) deepMerge(memo, nmb);
 
         for (let i = 0; i < allQuestions.length; i++) {
           const q = allQuestions[i];
@@ -490,17 +501,14 @@ export async function POST(req) {
               fingerprint: qComp.fingerprint,
               serverMemo: memo,
               updates: [
-                { type: "callMethod", payload: { method: "recordMarks", params: [markData] } },
                 { type: "callMethod", payload: { method: "setCurrentPages", params: [nextPage] } },
-                { type: "callMethod", payload: { method: "loadQuestion", params: [] } }
+                { type: "callMethod", payload: { method: "recordMarks", params: [markData] } }
               ],
             }),
           });
           const sJson = await sRes.json();
           const nms = sJson.serverMemo || {};
-          if (nms.checksum) memo.checksum = nms.checksum;
-          if (nms.htmlHash) memo.htmlHash = nms.htmlHash;
-          if (nms.data) deepMerge(memo.data, nms.data);
+          if (nms) deepMerge(memo, nms);
 
           send({ phase: "submit", current: i + 1, qNum: q.number, answer: q.ai_answer_value, optIdx: q.ai_answer_index + 1 });
         }

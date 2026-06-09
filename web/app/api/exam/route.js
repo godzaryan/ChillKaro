@@ -11,6 +11,17 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
 const GROQ_KEY = process.env.GROQ_API_KEY || "";
 const CEREBRAS_KEY = process.env.CEREBRAS_API_KEY || "";
 
+function deepMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    if (source[key] instanceof Object && key in target && target[key] instanceof Object) {
+      deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
 export const maxDuration = 300;
 
 // ─── Cookie Jar helper ───
@@ -328,11 +339,11 @@ export async function POST(req) {
         });
         const q1Json = await q1Res.json();
 
-        let memo = { ...qComp.serverMemo };
+        let memo = JSON.parse(JSON.stringify(qComp.serverMemo));
         const nm1 = q1Json.serverMemo || {};
         if (nm1.checksum) memo.checksum = nm1.checksum;
         if (nm1.htmlHash) memo.htmlHash = nm1.htmlHash;
-        if (nm1.data) memo.data = { ...memo.data, ...nm1.data };
+        if (nm1.data) deepMerge(memo.data, nm1.data);
 
         const q1Html = q1Json?.effects?.html || "";
         const $q1 = cheerio.load(q1Html);
@@ -369,7 +380,7 @@ export async function POST(req) {
           const nm = navJson.serverMemo || {};
           if (nm.checksum) memo.checksum = nm.checksum;
           if (nm.htmlHash) memo.htmlHash = nm.htmlHash;
-          if (nm.data) memo.data = { ...memo.data, ...nm.data };
+          if (nm.data) deepMerge(memo.data, nm.data);
 
           const ph = navJson?.effects?.html || "";
           if (ph) {
@@ -462,7 +473,7 @@ export async function POST(req) {
         const nmb = backJson.serverMemo || {};
         if (nmb.checksum) memo.checksum = nmb.checksum;
         if (nmb.htmlHash) memo.htmlHash = nmb.htmlHash;
-        if (nmb.data) memo.data = { ...memo.data, ...nmb.data };
+        if (nmb.data) deepMerge(memo.data, nmb.data);
 
         for (let i = 0; i < allQuestions.length; i++) {
           const q = allQuestions[i];
@@ -489,7 +500,7 @@ export async function POST(req) {
           const nms = sJson.serverMemo || {};
           if (nms.checksum) memo.checksum = nms.checksum;
           if (nms.htmlHash) memo.htmlHash = nms.htmlHash;
-          if (nms.data) memo.data = { ...memo.data, ...nms.data };
+          if (nms.data) deepMerge(memo.data, nms.data);
 
           send({ phase: "submit", current: i + 1, qNum: q.number, answer: q.ai_answer_value, optIdx: q.ai_answer_index + 1 });
         }

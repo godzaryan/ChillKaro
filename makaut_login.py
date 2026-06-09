@@ -8,6 +8,14 @@ import random
 import os
 from ai_solver import configure_keys
 
+def deep_merge(target, source):
+    """Recursively merge source dictionary into target dictionary."""
+    for k, v in source.items():
+        if isinstance(v, dict) and k in target and isinstance(target[k], dict):
+            deep_merge(target[k], v)
+        else:
+            target[k] = v
+
 # Disable SSL warnings if the server has certificate issues
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -342,12 +350,14 @@ def main():
                                                     q_json = q_resp.json()
                                                     
                                                     current_serverMemo = question_component["serverMemo"].copy()
+                                                    current_serverMemo['data'] = question_component["serverMemo"].get("data", {}).copy()
+                                                    
                                                     new_memo = q_json.get('serverMemo', {})
                                                     if new_memo:
                                                         current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
                                                         current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
                                                         if 'data' in new_memo:
-                                                            current_serverMemo['data'].update(new_memo['data'])
+                                                            deep_merge(current_serverMemo['data'], new_memo['data'])
                                                     
                                                     total_pages = 1
                                                     all_questions = []  # Master list of all scraped questions
@@ -439,7 +449,7 @@ def main():
                                                                 current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
                                                                 current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
                                                                 if 'data' in new_memo:
-                                                                    current_serverMemo['data'].update(new_memo['data'])
+                                                                    deep_merge(current_serverMemo['data'], new_memo['data'])
                                                             
                                                             p_html = p_json.get('effects', {}).get('html', '')
                                                             if p_html:
@@ -489,7 +499,7 @@ def main():
                                                             current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
                                                             current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
                                                             if 'data' in new_memo:
-                                                                current_serverMemo['data'].update(new_memo['data'])
+                                                                deep_merge(current_serverMemo['data'], new_memo['data'])
                                                         
                                                         # Now submit each answer by navigating through questions
                                                         for i, q in enumerate(solved_questions):
@@ -548,7 +558,7 @@ def main():
                                                                 current_serverMemo['checksum'] = new_memo.get('checksum', current_serverMemo['checksum'])
                                                                 current_serverMemo['htmlHash'] = new_memo.get('htmlHash', current_serverMemo['htmlHash'])
                                                                 if 'data' in new_memo:
-                                                                    current_serverMemo['data'].update(new_memo['data'])
+                                                                    deep_merge(current_serverMemo['data'], new_memo['data'])
                                                             
                                                             opt_text = q["options"][q["ai_answer_index"]] if q["ai_answer_index"] < len(q["options"]) else "?"
                                                             print(f"  [Q{qn}] Submitted Option {ai_idx}: {opt_text[:60]} ✓")

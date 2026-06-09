@@ -359,7 +359,10 @@ export async function POST(req) {
             body: JSON.stringify({
               fingerprint: qComp.fingerprint,
               serverMemo: memo,
-              updates: [{ type: "callMethod", payload: { method: "setCurrentPages", params: [p] } }],
+              updates: [
+                { type: "callMethod", payload: { method: "setCurrentPages", params: [p] } },
+                { type: "callMethod", payload: { method: "loadQuestion", params: [] } }
+              ],
             }),
           });
           const navJson = await navRes.json();
@@ -447,8 +450,12 @@ export async function POST(req) {
           method: "POST",
           headers: qHeaders,
           body: JSON.stringify({
-            fingerprint: qComp.fingerprint, serverMemo: memo,
-            updates: [{ type: "callMethod", payload: { method: "setCurrentPages", params: [1] } }],
+            fingerprint: qComp.fingerprint,
+            serverMemo: memo,
+            updates: [
+              { type: "callMethod", payload: { method: "setCurrentPages", params: [1] } },
+              { type: "callMethod", payload: { method: "loadQuestion", params: [] } }
+            ],
           }),
         });
         const backJson = await backRes.json();
@@ -469,10 +476,12 @@ export async function POST(req) {
             method: "POST",
             headers: qHeaders,
             body: JSON.stringify({
-              fingerprint: qComp.fingerprint, serverMemo: memo,
+              fingerprint: qComp.fingerprint,
+              serverMemo: memo,
               updates: [
-                { type: "callMethod", payload: { method: "setCurrentPages", params: [nextPage] } },
                 { type: "callMethod", payload: { method: "recordMarks", params: [markData] } },
+                { type: "callMethod", payload: { method: "setCurrentPages", params: [nextPage] } },
+                { type: "callMethod", payload: { method: "loadQuestion", params: [] } }
               ],
             }),
           });

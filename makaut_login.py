@@ -18,6 +18,15 @@ PASSWORD = input("Enter your Password: ").strip()
 # ---------------------
 
 # --- AI API Keys ---
+# Securely load from local environment file (so they aren't pushed to GitHub)
+env_path = os.path.join(os.path.dirname(__file__), "web", ".env.local")
+if os.path.exists(env_path):
+    with open(env_path, "r") as f:
+        for line in f:
+            if "=" in line and not line.startswith("#"):
+                k, v = line.strip().split("=", 1)
+                os.environ[k] = v
+
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
 CEREBRAS_KEY = os.environ.get("CEREBRAS_API_KEY", "")
@@ -409,6 +418,13 @@ def main():
                                                                             "method": "setCurrentPages",
                                                                             "params": [page]
                                                                         }
+                                                                    },
+                                                                    {
+                                                                        "type": "callMethod",
+                                                                        "payload": {
+                                                                            "method": "loadQuestion",
+                                                                            "params": []
+                                                                        }
                                                                     }
                                                                 ]
                                                             }
@@ -454,10 +470,16 @@ def main():
                                                         nav_back = {
                                                             "fingerprint": question_component["fingerprint"],
                                                             "serverMemo": current_serverMemo,
-                                                            "updates": [{
-                                                                "type": "callMethod",
-                                                                "payload": {"method": "setCurrentPages", "params": [1]}
-                                                            }]
+                                                            "updates": [
+                                                                {
+                                                                    "type": "callMethod",
+                                                                    "payload": {"method": "setCurrentPages", "params": [1]}
+                                                                },
+                                                                {
+                                                                    "type": "callMethod",
+                                                                    "payload": {"method": "loadQuestion", "params": []}
+                                                                }
+                                                            ]
                                                         }
                                                         back_resp = session.post(q_url, json=nav_back, headers=q_headers, verify=False)
                                                         back_resp.raise_for_status()
@@ -495,6 +517,13 @@ def main():
                                                                     {
                                                                         "type": "callMethod",
                                                                         "payload": {
+                                                                            "method": "recordMarks",
+                                                                            "params": [mark_data]
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "callMethod",
+                                                                        "payload": {
                                                                             "method": "setCurrentPages",
                                                                             "params": [next_page]
                                                                         }
@@ -502,8 +531,8 @@ def main():
                                                                     {
                                                                         "type": "callMethod",
                                                                         "payload": {
-                                                                            "method": "recordMarks",
-                                                                            "params": [mark_data]
+                                                                            "method": "loadQuestion",
+                                                                            "params": []
                                                                         }
                                                                     }
                                                                 ]

@@ -83,7 +83,8 @@ def ask_groq(prompt):
     try:
         r = requests.post(url, json=payload, headers=h, timeout=60)
         r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"].strip()
+        msg = r.json()["choices"][0]["message"]
+        return msg.get("content", "").strip()
     except Exception as e:
         print(f"    [!] Groq API error: {e}")
         return None
@@ -102,7 +103,8 @@ def ask_cerebras(prompt):
     try:
         r = requests.post(url, json=payload, headers=h, timeout=60)
         r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"].strip()
+        msg = r.json()["choices"][0]["message"]
+        return msg.get("content", "").strip()
     except Exception as e:
         print(f"    [!] Cerebras API error: {e}")
         return None
